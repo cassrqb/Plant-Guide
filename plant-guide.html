@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plant Study Guide — New England & Northeast</title>
+<style>
+  :root {
+    --native: #2d7a3a;
+    --invasive: #c0392b;
+    --cultivated: #7d5ba6;
+    --bg: #f5f3ee;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #666;
+    --border: #e0ddd5;
+    --accent: #3a6b35;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--accent); color: white; padding: 14px 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  header h1 { font-size: 1.05rem; font-weight: 700; }
+  header p { font-size: 0.72rem; opacity: 0.8; margin-top: 2px; }
+  .controls { background: white; padding: 10px 14px; position: sticky; top: 60px; z-index: 99; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  .search-box { display: flex; align-items: center; background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 7px 11px; gap: 8px; }
+  .search-box input { border: none; background: transparent; font-size: 0.92rem; width: 100%; outline: none; color: var(--text); }
+  .search-box svg { flex-shrink: 0; opacity: 0.4; }
+  .filter-row { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 1px; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); align-self: center; white-space: nowrap; min-width: 56px; }
+  .filter-btn { white-space: nowrap; padding: 5px 11px; border-radius: 20px; border: 1.5px solid var(--border); background: white; font-size: 0.76rem; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.15s; }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .filter-btn.status-native.active { background: var(--native); border-color: var(--native); }
+  .filter-btn.status-invasive.active { background: var(--invasive); border-color: var(--invasive); }
+  .filter-btn.status-cultivated.active { background: var(--cultivated); border-color: var(--cultivated); }
+  .count-bar { padding: 7px 14px; font-size: 0.76rem; color: var(--muted); }
+  .grid { padding: 0 10px 28px; display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
+  @media (max-width: 380px) { .grid { grid-template-columns: 1fr 1fr; } }
+  .card { background: var(--card); border-radius: 13px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.07); border: 1px solid var(--border); cursor: pointer; transition: transform 0.15s; display: flex; flex-direction: column; }
+  .card:active { transform: scale(0.97); }
+  .card-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #e8e4dc; display: block; }
+  .card-img-placeholder { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, #d4edda, #a8d5b5); display: none; align-items: center; justify-content: center; font-size: 2.4rem; }
+  .card-body { padding: 9px; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .card-common { font-size: 0.83rem; font-weight: 600; line-height: 1.2; }
+  .card-scientific { font-size: 0.7rem; font-style: italic; color: var(--muted); }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 5px; }
+  .status-badge { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; align-self: flex-start; }
+  .badge-native { background: #d4edda; color: var(--native); }
+  .badge-invasive { background: #fde8e8; color: var(--invasive); }
+  .badge-cultivated { background: #ede8f5; color: var(--cultivated); }
+  .region-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-southshore { background: #3a6b35; }
+  .dot-massachusetts { background: #1a5276; }
+  .dot-northeast { background: #784212; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; padding: 20px 12px; align-items: flex-end; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 20px 20px 14px 14px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; animation: slideUp 0.22s ease-out; }
+  @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 20px 20px 0 0; background: #e8e4dc; display: block; }
+  .modal-img-placeholder { width: 100%; aspect-ratio: 4/3; background: linear-gradient(135deg, #d4edda, #a8d5b5); display: none; align-items: center; justify-content: center; font-size: 5rem; border-radius: 20px 20px 0 0; }
+  .modal-body { padding: 18px; }
+  .modal-common { font-size: 1.25rem; font-weight: 700; line-height: 1.2; }
+  .modal-also { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+  .modal-scientific { font-size: 0.92rem; font-style: italic; color: #555; margin-top: 5px; }
+  .modal-divider { height: 1px; background: var(--border); margin: 13px 0; }
+  .modal-row { display: flex; gap: 8px; margin-bottom: 9px; }
+  .modal-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); min-width: 78px; padding-top: 1px; }
+  .modal-value { font-size: 0.86rem; line-height: 1.4; }
+  .modal-description { font-size: 0.86rem; line-height: 1.65; color: #444; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .modal-close { position: absolute; top: 30px; right: 22px; background: rgba(0,0,0,0.4); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .modal-wrapper { position: relative; }
+  .region-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+  .region-tag.southshore { background: #e8f5e9; color: #2d5a27; }
+  .region-tag.massachusetts { background: #e8eef5; color: #1a4a6b; }
+  .region-tag.northeast { background: #fdf3e7; color: #7a4010; }
+  .no-results { text-align: center; padding: 60px 20px; color: var(--muted); grid-column: 1/-1; }
+
+  /* Legend */
+  .legend { display: flex; gap: 12px; padding: 6px 14px 2px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.68rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 Plant Study Guide</h1>
+  <p>02171 Neighborhood · Massachusetts · Northeast US</p>
+</header>
+
+<div class="controls">
+  <div class="search-box">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="searchInput" placeholder="Search by name…" autocomplete="off" autocorrect="off" spellcheck="false">
+  </div>
+  <div class="filter-row">
+    <span class="filter-label">Region</span>
+    <button class="filter-btn active" data-region="all">All</button>
+    <button class="filter-btn" data-region="southshore">02171 / South Shore</button>
+    <button class="filter-btn" data-region="massachusetts">All Massachusetts</button>
+    <button class="filter-btn" data-region="northeast">Northeast US</button>
+  </div>
+  <div class="filter-row">
+    <span class="filter-label">Type</span>
+    <button class="filter-btn active" data-type="all">All</button>
+    <button class="filter-btn" data-type="tree">Trees</button>
+    <button class="filter-btn" data-type="shrub">Shrubs</button>
+    <button class="filter-btn" data-type="vine">Vines</button>
+    <button class="filter-btn" data-type="flowering">Flowers</button>
+    <button class="filter-btn" data-type="groundcover">Groundcovers</button>
+    <button class="filter-btn" data-type="grass">Grasses</button>
+    <button class="filter-btn" data-type="fern">Ferns</button>
+    <button class="filter-btn" data-type="moss">Mosses</button>
+  </div>
+  <div class="filter-row">
+    <span class="filter-label">Origin</span>
+    <button class="filter-btn active" data-status="all">All</button>
+    <button class="filter-btn status-native" data-status="native">Native</button>
+    <button class="filter-btn status-invasive" data-status="invasive">Invasive</button>
+    <button class="filter-btn status-cultivated" data-status="cultivated">Cultivated</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="region-dot dot-southshore"></span> 02171 / South Shore</div>
+  <div class="legend-item"><span class="region-dot dot-massachusetts"></span> Broader MA</div>
+  <div class="legend-item"><span class="region-dot dot-northeast"></span> Northeast US</div>
+</div>
+
+<div class="count-bar" id="countBar"></div>
+<div class="grid" id="plantGrid"></div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-wrapper">
+    <button class="modal-close" id="modalClose">✕</button>
+    <div class="modal" id="modal"></div>
+  </div>
+</div>
+
+<script>
+const PLANTS = [
+  // ── SOUTH SHORE / 02171 ────────────────────────────────────────────────────
+  { region:"southshore", common_names:["Red Maple","Swamp Maple","Soft Maple"], scientific_name:"Acer rubrum", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Medium to large deciduous tree with distinctive red flowers in early spring before leaves emerge, and brilliant red-to-orange fall foliage; one of the most common street and yard trees in suburban New England.", photo:"Acer_rubrum_15-p.bot-a.rubrum-114.jpg", emoji:"🌳" },
+  { region:"southshore", common_names:["Sugar Maple","Rock Maple","Hard Maple"], scientific_name:"Acer saccharum", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Large, long-lived deciduous tree prized for spectacular orange and yellow fall color and maple syrup production; common in parks and older residential yards.", photo:"Acer_saccharum_1-jgreenlee_(5098070608).jpg", emoji:"🍁" },
+  { region:"southshore", common_names:["Norway Maple"], scientific_name:"Acer platanoides", plant_type:"tree", native_range:"Europe and western Asia", status_in_ma:"invasive", description:"Large, dense shade tree with milky sap in leaf stems and yellow-green flower clusters in early spring; widely planted as a street tree but escapes and crowds out native species.", photo:"Spitz-Ahorn(mbo).jpg", emoji:"🌳" },
+  { region:"southshore", common_names:["Northern Red Oak","Red Oak"], scientific_name:"Quercus rubra", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Large native oak with pointed-lobed leaves turning deep red in fall; a dominant canopy tree in suburban neighborhoods and parks throughout the South Shore.", photo:"Quercus_rubra_@_Tortworth_Court.jpg", emoji:"🌳" },
+  { region:"southshore", common_names:["Eastern White Pine"], scientific_name:"Pinus strobus", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Tall evergreen conifer with soft, blue-green needles in bundles of five and long, slender cones; the tallest native tree in the Northeast, common in yards and woodlots.", photo:"Pinus_strobus_trees.jpg", emoji:"🌲" },
+  { region:"southshore", common_names:["Eastern Hemlock","Canadian Hemlock"], scientific_name:"Tsuga canadensis", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Graceful evergreen conifer with flat, short needles and tiny cones; often planted as a hedge or specimen tree, though threatened by the hemlock woolly adelgid pest.", photo:"Tsuga_canadensis_morton.jpg", emoji:"🌲" },
+  { region:"southshore", common_names:["Paper Birch","White Birch","Canoe Birch"], scientific_name:"Betula papyrifera", plant_type:"tree", native_range:"Northern North America", status_in_ma:"native", description:"Slender deciduous tree immediately recognizable by its peeling, chalk-white bark; commonly planted as a landscape specimen and found in second-growth woodlands.", photo:"Betula_papyrifera_4.jpg", emoji:"🌳" },
+  { region:"southshore", common_names:["Flowering Dogwood"], scientific_name:"Cornus florida", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Small ornamental tree with showy white or pink bracts surrounding tiny flowers in May; among the most planted native ornamental trees in suburban New England yards.", photo:"Cornus_florida_Arkansas.jpg", emoji:"🌸" },
+  { region:"southshore", common_names:["American Sycamore","Buttonball Tree","Buttonwood"], scientific_name:"Platanus occidentalis", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Very large native tree with distinctive mottled, peeling bark revealing creamy white patches; found along streams and planted in parks and large yards.", photo:"Platanus_occidentalis_2.jpg", emoji:"🌳" },
+  { region:"southshore", common_names:["White Ash"], scientific_name:"Fraxinus americana", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Large native deciduous tree with compound leaves and furrowed bark; once common in suburban yards but now severely decimated by the invasive emerald ash borer.", photo:"Fraxinus_americana_002.jpg", emoji:"🌳" },
+  { region:"southshore", common_names:["Black Cherry","Wild Cherry","Rum Cherry"], scientific_name:"Prunus serotina", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Medium-sized native tree with racemes of white flowers in May and small dark edible cherries in summer; common in second-growth woodlands and forest edges throughout the South Shore.", photo:"Amerikaanse_vogelkers_Prunus_serotina_closeup.jpg", emoji:"🍒" },
+  { region:"southshore", common_names:["Tree of Heaven","Ailanthus","Ghetto Palm"], scientific_name:"Ailanthus altissima", plant_type:"tree", native_range:"China", status_in_ma:"invasive", description:"Fast-growing deciduous tree with large compound leaves and an unpleasant odor; aggressively colonizes disturbed areas, roadsides, and vacant lots throughout urban and suburban Massachusetts.", photo:"Ailanthus_altissima.jpg", emoji:"🌳" },
+  { region:"southshore", common_names:["Black Locust","False Acacia"], scientific_name:"Robinia pseudoacacia", plant_type:"tree", native_range:"Appalachian and Ozark regions, eastern USA", status_in_ma:"invasive", description:"Medium-sized tree with paired thorns at leaf bases and fragrant, drooping white flower clusters in late May; naturalized throughout disturbed areas and roadsides in eastern Massachusetts.", photo:"Robina9146.JPG", emoji:"🌳" },
+  { region:"southshore", common_names:["Black Tupelo","Black Gum","Pepperidge","Sour Gum"], scientific_name:"Nyssa sylvatica", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Native tree with glossy leaves that turn spectacular scarlet red very early in fall; found in moist woodlands and occasionally planted as a landscape tree on the South Shore.", photo:"Nyssa_sylvatica_v_sylvatica.jpg", emoji:"🌳" },
+  { region:"southshore", common_names:["Sassafras"], scientific_name:"Sassafras albidum", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Small to medium native tree with distinctive mitten-shaped and three-lobed leaves that smell strongly of root beer when crushed; forms thickets along roadsides and forest edges.", photo:"Sassafras_albidum_range_map.jpg", emoji:"🌳" },
+  { region:"southshore", common_names:["Cherry Plum","Purple-leaf Plum","Myrobalan Plum"], scientific_name:"Prunus cerasifera", plant_type:"tree", native_range:"Western Asia and Caucasus", status_in_ma:"cultivated", description:"Small ornamental tree planted for its deep purple or red foliage; explodes with small pink to white flowers in early spring before leaves appear, very common in suburban yards throughout Quincy.", photo:"Wildpflaume_Althof-2.jpg", emoji:"🌸" },
+  { region:"southshore", common_names:["Eastern Red Cedar"], scientific_name:"Juniperus virginiana", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Evergreen conifer with scale-like foliage and blue-gray berry-like cones; common on dry, open slopes, roadsides, and field edges throughout eastern Massachusetts.", photo:"Juniperus_virginiana_fol_fr.jpg", emoji:"🌲" },
+  { region:"southshore", common_names:["Staghorn Sumac","Velvet Sumac"], scientific_name:"Rhus typhina", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Large native shrub or small tree with velvety twigs, large compound leaves with brilliant fall color, and upright clusters of dense red fuzzy fruits that persist through winter.", photo:"Rhus_typhina_2.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["Common Lilac"], scientific_name:"Syringa vulgaris", plant_type:"shrub", native_range:"Balkan Peninsula", status_in_ma:"cultivated", description:"Large deciduous shrub with intensely fragrant purple or white flower clusters in mid-May; an old-fashioned New England garden staple found in nearly every suburban yard.", photo:"Syringa_vulgaris_1.jpg", emoji:"💜" },
+  { region:"southshore", common_names:["Forsythia","Golden Bells"], scientific_name:"Forsythia × intermedia", plant_type:"shrub", native_range:"Garden hybrid (parents from East Asia)", status_in_ma:"cultivated", description:"Deciduous shrub covered in bright yellow flowers in April before leaves emerge; one of the most widely planted ornamental shrubs in New England, marking the visual start of spring.", photo:"Forsythia_flower.JPG", emoji:"🌼" },
+  { region:"southshore", common_names:["Bigleaf Hydrangea","Mophead Hydrangea"], scientific_name:"Hydrangea macrophylla", plant_type:"shrub", native_range:"Japan", status_in_ma:"cultivated", description:"Deciduous shrub with very large, round flower clusters in blue, pink, or white from midsummer onward; ubiquitous in coastal New England gardens, especially near the ocean.", photo:"Hydrangea_macrophylla.jpg", emoji:"💐" },
+  { region:"southshore", common_names:["Burning Bush","Winged Euonymus"], scientific_name:"Euonymus alatus", plant_type:"shrub", native_range:"East Asia", status_in_ma:"invasive", description:"Dense deciduous shrub with distinctive corky-winged stems and brilliant scarlet fall foliage; extremely popular in landscaping but widely invasive, spreading into forests throughout MA.", photo:"Euonymous_alatus.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["Japanese Barberry","Barberry"], scientific_name:"Berberis thunbergii", plant_type:"shrub", native_range:"Japan", status_in_ma:"invasive", description:"Compact deciduous shrub with sharp spines, small oval leaves (often reddish-purple in cultivated varieties), and bright red berries persisting into winter; invasive in woodlands and a tick habitat booster.", photo:"Berberis_thunb_frt.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["Highbush Blueberry"], scientific_name:"Vaccinium corymbosum", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Native deciduous shrub producing edible blue berries in summer, small white urn-shaped flowers in spring, and vivid red fall foliage; found in moist woodland edges and widely planted in gardens.", photo:"Vaccinium_corymbosum(01).jpg", emoji:"🫐" },
+  { region:"southshore", common_names:["Spicebush","Northern Spicebush","Wild Allspice"], scientific_name:"Lindera benzoin", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Native understory shrub with tiny yellow flowers in early April before leaves emerge, aromatic bark and leaves, and red berries; an important host plant for the spicebush swallowtail butterfly.", photo:"Lindera_benzoin_flowers.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["Winterberry","Winterberry Holly","Black Alder"], scientific_name:"Ilex verticillata", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Native deciduous holly with dense clusters of brilliant red berries persisting on bare branches all winter; found in wet areas and widely cultivated for ornamental winter interest.", photo:"Ilex_verticillata_fruits_and_foliage_1.JPG", emoji:"🔴" },
+  { region:"southshore", common_names:["Serviceberry","Shadbush","Juneberry","Shadblow"], scientific_name:"Amelanchier canadensis", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Native large shrub or small tree with delicate white flowers in early April (when shad fish run in coastal rivers), edible dark purple berries in June, and orange-red fall color.", photo:"Amelanchier_canadensis_flower.jpg", emoji:"🌸" },
+  { region:"southshore", common_names:["Multiflora Rose"], scientific_name:"Rosa multiflora", plant_type:"shrub", native_range:"East Asia", status_in_ma:"invasive", description:"Arching, thorny shrub with clusters of small white five-petaled flowers in June and dense clusters of small red hips in fall; aggressively colonizes roadsides, field edges, and disturbed areas throughout MA.", photo:"Rosa_multiflora_flowers.jpg", emoji:"🌹" },
+  { region:"southshore", common_names:["Autumn Olive","Autumn Elaeagnus"], scientific_name:"Elaeagnus umbellata", plant_type:"shrub", native_range:"Asia", status_in_ma:"invasive", description:"Spreading shrub with silvery-scaled leaves, fragrant tubular yellow-white flowers in spring, and abundant small speckled red berries in fall; invades open fields and roadsides throughout eastern MA.", photo:"Elaeagnus_umbellata1.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["Rugosa Rose","Beach Rose","Saltspray Rose"], scientific_name:"Rosa rugosa", plant_type:"shrub", native_range:"East Asia", status_in_ma:"cultivated", description:"Dense, thorny shrub with very fragrant deep pink or white flowers throughout summer and large orange-red hips in fall; naturalized along roadsides and coastal areas of the South Shore.", photo:"Rosa_rugosa_Tokyo.JPG", emoji:"🌹" },
+  { region:"southshore", common_names:["Japanese Yew","Spreading Yew"], scientific_name:"Taxus cuspidata", plant_type:"shrub", native_range:"Japan, Korea, China", status_in_ma:"cultivated", description:"Evergreen conifer shrub or small tree with flat dark-green needles and bright red berry-like arils in fall; one of the most common foundation plantings around homes in New England.", photo:"Taxus_cuspidata_fruits.JPG", emoji:"🌲" },
+  { region:"southshore", common_names:["Morrow's Honeysuckle","Bush Honeysuckle"], scientific_name:"Lonicera morrowii", plant_type:"shrub", native_range:"Japan", status_in_ma:"invasive", description:"Arching deciduous shrub with white-to-pale-yellow paired flowers in May and paired red berries; one of the most widespread invasive shrubs in Massachusetts, heavily shading out native understory plants.", photo:"Lonicera_morrowii_flowers.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["Oriental Bittersweet","Asian Bittersweet"], scientific_name:"Celastrus orbiculatus", plant_type:"vine", native_range:"East Asia", status_in_ma:"invasive", description:"Woody twining vine with small yellow flowers and showy orange-and-yellow capsules in fall that split to reveal red berries; girdles and kills trees as it spirals upward throughout suburban MA.", photo:"Celastrus_orbiculatus.jpg", emoji:"🍃" },
+  { region:"southshore", common_names:["Virginia Creeper","Woodbine","Five-leaved Ivy"], scientific_name:"Parthenocissus quinquefolia", plant_type:"vine", native_range:"Eastern North America", status_in_ma:"native", description:"Native climbing vine with distinctive five-leaflet leaves that turn brilliant crimson-red in fall; climbs walls, fences, and trees using adhesive-tipped tendrils.", photo:"Virginia_creeper_Parthenocissus_quinquifolia_169.JPG", emoji:"🍂" },
+  { region:"southshore", common_names:["Poison Ivy"], scientific_name:"Toxicodendron radicans", plant_type:"vine", native_range:"North America and East Asia", status_in_ma:"native", description:"Low shrub or climbing vine with characteristic three-leaflet leaves that cause severe skin rash on contact; extremely common along woodland edges, fences, and trails in Quincy and the South Shore.", photo:"Poison_ivy_leaflet3.jpg", emoji:"⚠️" },
+  { region:"southshore", common_names:["Japanese Honeysuckle"], scientific_name:"Lonicera japonica", plant_type:"vine", native_range:"East Asia", status_in_ma:"invasive", description:"Semi-evergreen twining vine with highly fragrant white-to-yellow tubular flowers from May through summer; smothers native vegetation along roadsides, forest edges, and fences.", photo:"Honeysuckle-2.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["Porcelain Berry","Amur Peppervine","Porcelain Vine"], scientific_name:"Ampelopsis glandulosa var. brevipedunculata", plant_type:"vine", native_range:"East Asia", status_in_ma:"invasive", description:"Woody vine resembling wild grape, distinguished by multicolored berries ranging from lilac to turquoise to deep purple on one cluster; rapidly overtops and smothers shrubs and small trees.", photo:"Ampelopsis-brevipedunculata.JPG", emoji:"🍇" },
+  { region:"southshore", common_names:["Chinese Wisteria"], scientific_name:"Wisteria sinensis", plant_type:"vine", native_range:"China", status_in_ma:"cultivated", description:"Massive, long-lived woody vine with spectacular drooping clusters of fragrant purple flowers in May; planted on trellises and arbors, can escape cultivation and strangle trees.", photo:"Wisteria_sinensis_1.jpg", emoji:"💜" },
+  { region:"southshore", common_names:["Black Swallow-wort"], scientific_name:"Cynanchum louiseae", plant_type:"vine", native_range:"Southwestern Europe", status_in_ma:"invasive", description:"Twining herbaceous vine with small dark maroon-purple star-shaped flowers in summer and milkweed-like seed pods; aggressively invades disturbed areas, roadsides, and forest edges throughout MA.", photo:"Cynanchum_louiseae.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["Common Dandelion"], scientific_name:"Taraxacum officinale", plant_type:"flowering", native_range:"Europe and Asia", status_in_ma:"cultivated", description:"Familiar lawn weed with a rosette of toothed leaves, bright yellow composite flowers from spring through fall, and globe-shaped seed heads that disperse on the wind.", photo:"Taraxacum_officinale_Web.jpg", emoji:"🌼" },
+  { region:"southshore", common_names:["Garlic Mustard"], scientific_name:"Alliaria petiolata", plant_type:"flowering", native_range:"Europe, western and central Asia", status_in_ma:"invasive", description:"Biennial herb with triangular, scallop-edged leaves smelling of garlic when crushed and small white four-petaled flowers in April–May; aggressively invades woodland understories and edges.", photo:"Alliaria_petiolata_marais-belloy-sur-somme_80_26042007_3.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["Japanese Knotweed","Fleece Flower","Mexican Bamboo"], scientific_name:"Reynoutria japonica", plant_type:"flowering", native_range:"East Asia", status_in_ma:"invasive", description:"Extremely aggressive herbaceous perennial growing up to 10 feet tall with hollow bamboo-like stems, large shovel-shaped leaves, and sprays of small white flowers in late summer.", photo:"Reynoutria_japonica_in_Brastad_1.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["Dame's Rocket","Dame's Violet","Sweet Rocket"], scientific_name:"Hesperis matronalis", plant_type:"flowering", native_range:"Europe and Asia", status_in_ma:"invasive", description:"Tall biennial with fragrant pink, purple, or white four-petaled flowers from May through July; naturalized along roadsides and disturbed areas, often mistaken for native wild phlox.", photo:"Sweet_Rockets.png", emoji:"💜" },
+  { region:"southshore", common_names:["Common Milkweed","Silkweed"], scientific_name:"Asclepias syriaca", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Stout native perennial with large oval leaves and fragrant globular clusters of pink-purple flowers in July; the essential host plant for monarch butterfly caterpillars.", photo:"Asclepias_syriaca_2.jpg", emoji:"🦋" },
+  { region:"southshore", common_names:["Canada Goldenrod","Tall Goldenrod"], scientific_name:"Solidago canadensis", plant_type:"flowering", native_range:"North America", status_in_ma:"native", description:"Common native perennial with arching plume-like clusters of tiny yellow flowers from August through October; a dominant wildflower of roadsides and old fields across the South Shore.", photo:"Solidago_canadensis_20050815_248.jpg", emoji:"🌼" },
+  { region:"southshore", common_names:["New England Aster"], scientific_name:"Symphyotrichum novae-angliae", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Tall native perennial producing masses of deep purple-to-lavender daisy-like flowers with yellow centers from late August through October; a vital late-season pollinator resource.", photo:"Symphyotrichum_novae-angliae3.jpg", emoji:"💜" },
+  { region:"southshore", common_names:["Orange Daylily","Tawny Daylily","Ditch Lily"], scientific_name:"Hemerocallis fulva", plant_type:"flowering", native_range:"East Asia", status_in_ma:"cultivated", description:"Vigorous clump-forming perennial with strap-like leaves and large, tawny orange six-petaled flowers in June–July; naturalized along roadsides, railroad tracks, and suburban yards throughout MA.", photo:"HemerocallisFulva1UME.jpg", emoji:"🌺" },
+  { region:"southshore", common_names:["Black-eyed Susan"], scientific_name:"Rudbeckia hirta", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Native biennial or short-lived perennial with bright yellow daisy-like flowers and dark brown-black cone centers blooming June through September; common in gardens, roadsides, and sunny disturbed areas.", photo:"Rudbeckia_hirta_kz03.jpg", emoji:"🌻" },
+  { region:"southshore", common_names:["Orange Jewelweed","Spotted Touch-me-not"], scientific_name:"Impatiens capensis", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Common native annual with succulent translucent stems and dangling spotted orange flowers from July through September; found in moist shade along streams and wooded edges throughout the South Shore.", photo:"Impatiens_capensis_4.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["White Clover"], scientific_name:"Trifolium repens", plant_type:"flowering", native_range:"Europe and Central Asia", status_in_ma:"cultivated", description:"Low creeping perennial with three-part leaves often bearing white chevron markings and spherical white flower heads; ubiquitous in lawns, roadsides, and disturbed areas.", photo:"Trifolium_repens_-_flower.jpg", emoji:"🍀" },
+  { region:"southshore", common_names:["Common Burdock","Lesser Burdock"], scientific_name:"Arctium minus", plant_type:"flowering", native_range:"Europe", status_in_ma:"cultivated", description:"Large biennial with enormous rhubarb-like basal leaves and round, hooked burrs in late summer that cling tenaciously to clothing and animal fur; common along woodland edges and disturbed areas.", photo:"Arctium_minus_in_Indiana.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["St. John's Wort","Common St. John's Wort"], scientific_name:"Hypericum perforatum", plant_type:"flowering", native_range:"Europe and Asia", status_in_ma:"cultivated", description:"Erect perennial herb with small oval leaves dotted with translucent oil glands and clusters of bright yellow five-petaled flowers from June through August; naturalized in dry, open areas and roadsides.", photo:"Hypericum_perforatum_003.jpg", emoji:"🌼" },
+  { region:"southshore", common_names:["Purple Loosestrife"], scientific_name:"Lythrum salicaria", plant_type:"flowering", native_range:"Europe and Asia", status_in_ma:"invasive", description:"Tall perennial herb forming dense monocultures in wetlands, with showy spikes of magenta-purple flowers from July through September; one of the most damaging wetland invasives in MA.", photo:"Lythrum_salicaria_-_harilik_kukesaba.jpg", emoji:"💜" },
+  { region:"southshore", common_names:["Bishop's Goutweed","Ground Elder","Goutweed"], scientific_name:"Aegopodium podagraria", plant_type:"groundcover", native_range:"Europe and Asia", status_in_ma:"invasive", description:"Aggressive spreading groundcover with compound leaves (variegated white-and-green in cultivated forms) and flat-topped white flower clusters in June; spreads by rhizomes and escapes gardens into disturbed areas.", photo:"Aegopodium_podagraria1.jpg", emoji:"🌱" },
+  { region:"southshore", common_names:["Japanese Spurge","Pachysandra"], scientific_name:"Pachysandra terminalis", plant_type:"groundcover", native_range:"Japan and China", status_in_ma:"cultivated", description:"Evergreen low-growing groundcover with glossy, toothed leaves and small white flower spikes in early spring; planted under trees in nearly every suburban New England yard.", photo:"Pachysandra_terminalis0.jpg", emoji:"🌱" },
+  { region:"southshore", common_names:["Periwinkle","Common Periwinkle","Myrtle"], scientific_name:"Vinca minor", plant_type:"groundcover", native_range:"Central and Southern Europe", status_in_ma:"cultivated", description:"Trailing evergreen groundcover with small glossy leaves and solitary blue-violet five-petaled flowers in spring; planted under trees and on slopes, can escape into woodland areas.", photo:"Vinca_minor_Nashville.jpg", emoji:"🌸" },
+  { region:"southshore", common_names:["Partridgeberry","Twinberry"], scientific_name:"Mitchella repens", plant_type:"groundcover", native_range:"Eastern North America", status_in_ma:"native", description:"Low native evergreen mat-forming plant with small paired glossy leaves, twin white tubular flowers in summer, and bright red paired berries that persist into winter on shaded woodland floors.", photo:"Mitchella_repens_Partridge_berry_Norfolk_Connecticut_05112019.jpg", emoji:"🔴" },
+  { region:"southshore", common_names:["Wintergreen","Checkerberry","Teaberry"], scientific_name:"Gaultheria procumbens", plant_type:"groundcover", native_range:"Eastern North America", status_in_ma:"native", description:"Low native evergreen groundcover with small shiny leathery leaves that smell of wintergreen when crushed and small red berry-like fruits persisting through winter under acidic woodland canopy.", photo:"Gaultheria_procumbens.JPG", emoji:"🌱" },
+  { region:"southshore", common_names:["Common Reed","Phragmites"], scientific_name:"Phragmites australis", plant_type:"grass", native_range:"Eurasia (invasive haplotype)", status_in_ma:"invasive", description:"Extremely tall perennial grass (up to 15 feet) with fluffy tan-brown plumes in fall; forms dense impenetrable monocultures in coastal wetlands and ditches, crowding out native marsh plants.", photo:"Phragmites_australis_Tamarac.jpg", emoji:"🌾" },
+  { region:"southshore", common_names:["Red Fescue","Creeping Red Fescue"], scientific_name:"Festuca rubra", plant_type:"grass", native_range:"Europe and temperate North America", status_in_ma:"cultivated", description:"Fine-bladed, cool-season lawn grass with narrow bright green leaves; widely used in lawn seed mixes for shaded, dry, or coastal conditions throughout New England.", photo:"Festuca_rubra_detail.jpeg", emoji:"🌾" },
+  { region:"southshore", common_names:["Large Crabgrass","Hairy Crabgrass"], scientific_name:"Digitaria sanguinalis", plant_type:"grass", native_range:"Europe and Asia", status_in_ma:"cultivated", description:"Annual summer grass that germinates in warm weather and spreads as a low mat with finger-like seed spikes; a ubiquitous lawn weed in driveways, sidewalk cracks, and thin turf areas.", photo:"Digitaria_sanguinalis_3.jpg", emoji:"🌾" },
+  { region:"southshore", common_names:["Marginal Wood Fern","Leather Wood Fern"], scientific_name:"Dryopteris marginalis", plant_type:"fern", native_range:"Eastern North America", status_in_ma:"native", description:"Native evergreen fern with leathery, dark green fronds that remain green through winter; one of the most common ferns on wooded suburban hillsides and woodland edges in eastern MA.", photo:"Dryopteris_marginalis0.jpg", emoji:"🌿" },
+  { region:"southshore", common_names:["Cinnamon Fern"], scientific_name:"Osmundastrum cinnamomeum", plant_type:"fern", native_range:"Eastern North America and East Asia", status_in_ma:"native", description:"Large native fern with distinctive separate cinnamon-brown fertile fronds rising from the center of a vase-shaped clump of green sterile fronds; common in moist woods and wetland edges.", photo:"Osmundastrum_cinnamomeum_May2015.jpg", emoji:"🌿" },
+
+  // ── BROADER MASSACHUSETTS ─────────────────────────────────────────────────
+  { region:"massachusetts", common_names:["Pitch Pine","Scrub Pine"], scientific_name:"Pinus rigida", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Rugged, fire-adapted pine with stiff twisted needles in bundles of three and persistent prickly cones; dominates the sandy pitch pine barrens of Cape Cod and the Plymouth area, forming low gnarled forests over pale sandy soil.", photo:"Pinus_rigida_tree.jpg", emoji:"🌲" },
+  { region:"massachusetts", common_names:["Bearberry","Kinnikinnick","Mealberry"], scientific_name:"Arctostaphylos uva-ursi", plant_type:"groundcover", native_range:"Circumpolar northern regions", status_in_ma:"native", description:"Low mat-forming evergreen shrub with small leathery leaves, tiny pink urn-shaped flowers, and bright red berries; common in the sandy, acidic soils of Cape Cod pine barrens and coastal heathlands.", photo:"Arctostaphylos_uva-ursi_4.jpg", emoji:"🔴" },
+  { region:"massachusetts", common_names:["Beach Heather","Poverty Grass","Woolly Hudsonia"], scientific_name:"Hudsonia tomentosa", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Low heath-like shrub covered in tiny scale-like gray-green leaves with bright yellow flowers in late spring; forms dense mats on open coastal sand dunes and the sandy barrens of Cape Cod.", photo:"Hudsonia_tomentosa.jpg", emoji:"🌼" },
+  { region:"massachusetts", common_names:["Seaside Goldenrod","Beach Goldenrod"], scientific_name:"Solidago sempervirens", plant_type:"flowering", native_range:"Atlantic and Gulf coasts of North America", status_in_ma:"native", description:"Robust goldenrod with thick, succulent-like leaves and large arching plumes of bright yellow flowers in late summer and fall; highly visible along salt marshes, coastal dunes, and roadsides near the MA shoreline.", photo:"Solidago_sempervirens2.jpg", emoji:"🌻" },
+  { region:"massachusetts", common_names:["Saltmarsh Cordgrass","Smooth Cordgrass","Spartina"], scientific_name:"Spartina alterniflora", plant_type:"grass", native_range:"Atlantic and Gulf coasts of North America", status_in_ma:"native", description:"The dominant grass of intertidal salt marshes, forming tall dense stands of bright green in summer that turn golden-brown in fall; defines the iconic tidal marsh landscapes throughout the MA coast.", photo:"Spartina_alterniflora_low_marsh.jpg", emoji:"🌾" },
+  { region:"massachusetts", common_names:["Salt Marsh Hay","Salt Meadow Cordgrass"], scientific_name:"Spartina patens", plant_type:"grass", native_range:"Atlantic and Gulf coasts of North America", status_in_ma:"native", description:"Fine-textured salt marsh grass that forms characteristic swirled 'cowlick' patterns on the high marsh zone; historically harvested as hay, it carpets the upper edges of MA salt marshes in a distinctive wiry mat.", photo:"Spartina_patens.jpg", emoji:"🌾" },
+  { region:"massachusetts", common_names:["Cranberry","American Cranberry","Bog Cranberry"], scientific_name:"Vaccinium macrocarpon", plant_type:"groundcover", native_range:"Eastern North America", status_in_ma:"native", description:"Low trailing evergreen vine with tiny leathery leaves, delicate pink reflexed flowers, and iconic bright red berries; native to acidic bogs across MA and famously cultivated in flooded cranberry bogs on Cape Cod and Plymouth County.", photo:"Cranberry_flowers.jpg", emoji:"🔴" },
+  { region:"massachusetts", common_names:["Round-leaved Sundew","Sundew"], scientific_name:"Drosera rotundifolia", plant_type:"flowering", native_range:"Circumboreal", status_in_ma:"native", description:"Tiny carnivorous plant forming rosettes of round reddish leaves covered in sticky glistening tentacles that trap insects; found in the acidic sphagnum bogs of Cape Cod, southeastern MA, and the central highlands.", photo:"Drosera_rotundifolia1.jpg", emoji:"🌿" },
+  { region:"massachusetts", common_names:["Northern Pitcher Plant","Purple Pitcher Plant"], scientific_name:"Sarracenia purpurea", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Carnivorous bog plant with distinctive hollow, pitcher-shaped leaves filled with digestive fluid that trap and dissolve insects, topped by a nodding maroon-purple flower in spring; found in sphagnum bogs from Cape Cod to the Berkshires.", photo:"Sarracenia_purpurea_ne1.jpg", emoji:"🪴" },
+  { region:"massachusetts", common_names:["Sphagnum Moss","Peat Moss","Bog Moss"], scientific_name:"Sphagnum spp.", plant_type:"moss", native_range:"Circumboreal", status_in_ma:"native", description:"Soft, spongy mosses ranging in color from pale green to deep red that form the living carpet of acidic bogs; holds enormous amounts of water and creates the acidic conditions that define MA bogs and fens.", photo:"Sphagnum_palustre_plant.jpg", emoji:"🌿" },
+  { region:"massachusetts", common_names:["Leatherleaf","Cassandra"], scientific_name:"Chamaedaphne calyculata", plant_type:"shrub", native_range:"Circumboreal", status_in_ma:"native", description:"Evergreen bog shrub with small leathery rusty-scaled leaves and rows of tiny white bell-shaped flowers in early spring; forms dense thickets around the margins of MA bogs and acidic ponds.", photo:"Chamaedaphne_calyculata_1.jpg", emoji:"🌿" },
+  { region:"massachusetts", common_names:["Sheep Laurel","Lambkill","Dwarf Laurel"], scientific_name:"Kalmia angustifolia", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Low evergreen shrub with whorled narrow leaves and clusters of deep rose-pink saucer-shaped flowers in early summer; abundant in acidic heathlands, bogs, and pine barrens across MA, and toxic to livestock.", photo:"Kalmia_angustifolia1.jpg", emoji:"🌸" },
+  { region:"massachusetts", common_names:["Labrador Tea"], scientific_name:"Rhododendron groenlandicum", plant_type:"shrub", native_range:"Northern North America and Greenland", status_in_ma:"native", description:"Aromatic evergreen bog shrub with leathery leaves that are white-woolly beneath, bearing clusters of small white flowers in spring; found in sphagnum bogs and acidic wetlands across central and eastern MA.", photo:"Ledum_groenlandicum_3.jpg", emoji:"🌿" },
+  { region:"massachusetts", common_names:["Swamp Azalea","Clammy Azalea","White Swamp Honeysuckle"], scientific_name:"Rhododendron viscosum", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Deciduous native azalea with intensely fragrant white to pale pink tubular flowers that bloom in midsummer after the leaves emerge; common in swamps, pond edges, and wet thickets throughout MA.", photo:"Rhododendron_viscosum_2.jpg", emoji:"🌸" },
+  { region:"massachusetts", common_names:["Buttonbush","Button Willow","Honey Bells"], scientific_name:"Cephalanthus occidentalis", plant_type:"shrub", native_range:"North America", status_in_ma:"native", description:"Wetland shrub bearing distinctive spherical white flower heads resembling pincushions in midsummer, followed by spiky round brown seed balls; found along pond edges, river banks, and freshwater marshes throughout MA.", photo:"Cephalanthus_occidentalis_USDA.jpg", emoji:"⚪" },
+  { region:"massachusetts", common_names:["Sensitive Fern","Bead Fern"], scientific_name:"Onoclea sensibilis", plant_type:"fern", native_range:"Eastern North America and East Asia", status_in_ma:"native", description:"Distinctive fern with broad, lobed, non-ferny-looking fronds and separate fertile fronds bearing rows of hard, bead-like spore cases that persist through winter; extremely common in wet woods, swamp edges, and ditches throughout MA.", photo:"Onoclea_sensibilis_27082003.jpg", emoji:"🌿" },
+  { region:"massachusetts", common_names:["Royal Fern","Flowering Fern"], scientific_name:"Osmunda regalis", plant_type:"fern", native_range:"Cosmopolitan", status_in_ma:"native", description:"Majestic fern reaching 4–6 feet tall with broad fronds whose tips transform into golden-brown fertile segments resembling flower clusters; found in swamps, bogs, and stream banks across MA, turning rich gold in autumn.", photo:"Osmunda_regalis_2.jpg", emoji:"🌿" },
+  { region:"massachusetts", common_names:["Interrupted Fern"], scientific_name:"Osmunda claytoniana", plant_type:"fern", native_range:"Eastern North America and Asia", status_in_ma:"native", description:"Large fern whose fronds are 'interrupted' midway by dark brown spore-bearing pinnae sandwiched between sterile green ones, creating a distinctive two-tone appearance; common in moist upland woods and rocky slopes across MA.", photo:"Osmunda_claytoniana.jpg", emoji:"🌿" },
+  { region:"massachusetts", common_names:["Hay-scented Fern"], scientific_name:"Dennstaedtia punctilobula", plant_type:"fern", native_range:"Eastern North America", status_in_ma:"native", description:"Delicate, light yellow-green fern with finely cut fronds that release a sweet hay-like fragrance when crushed, forming dense carpets in open woods and hillsides; extremely common across MA upland forests.", photo:"Dennstaedtia_punctilobula.jpg", emoji:"🌿" },
+  { region:"massachusetts", common_names:["Steeplebush","Hardhack","Rosy Meadowsweet"], scientific_name:"Spiraea tomentosa", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Native shrub bearing tall, steeple-shaped spikes of tiny deep rose-pink flowers in midsummer, with woolly rust-colored stems; common in old fields, wet meadows, and swamp edges across MA.", photo:"Spiraea_tomentosa.jpg", emoji:"🌸" },
+  { region:"massachusetts", common_names:["Joe-Pye Weed","Purple Boneset"], scientific_name:"Eutrochium purpureum", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Towering native wildflower reaching 5–7 feet tall with whorled leaves and large domed clusters of dusty rose-purple flowers in late summer that are magnets for butterflies; found in moist meadows and stream banks throughout MA.", photo:"Eutrochium_purpureum_2.jpg", emoji:"🦋" },
+  { region:"massachusetts", common_names:["Cardinal Flower"], scientific_name:"Lobelia cardinalis", plant_type:"flowering", native_range:"North and South America", status_in_ma:"native", description:"Striking native wildflower with tall spikes of brilliant scarlet tubular flowers in midsummer, almost exclusively pollinated by ruby-throated hummingbirds; grows along stream banks, river edges, and wet meadows throughout MA.", photo:"Lobelia_cardinalis_2.jpg", emoji:"🌺" },
+  { region:"massachusetts", common_names:["Swamp Rose","Marsh Rose"], scientific_name:"Rosa palustris", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Native rose with arching thorny canes, fragrant deep pink five-petaled flowers in midsummer, and small red hips persisting into winter; thrives in swamps, wet thickets, and pond margins across MA.", photo:"Rosa_palustris.jpg", emoji:"🌹" },
+  { region:"massachusetts", common_names:["Tussock Sedge","Hassock Grass"], scientific_name:"Carex stricta", plant_type:"grass", native_range:"Eastern North America", status_in_ma:"native", description:"Native sedge that builds prominent fibrous tussocks — elevated pedestals of old stems and roots — in freshwater marshes and swamps, creating a distinctive hummock landscape characteristic of MA cattail marshes.", photo:"Carex_stricta_tussocks.jpg", emoji:"🌾" },
+  { region:"massachusetts", common_names:["Yellow Pond-lily","Spadderdock","Cow Lily","Bullhead Lily"], scientific_name:"Nuphar variegata", plant_type:"flowering", native_range:"Northern North America", status_in_ma:"native", description:"Aquatic plant with large heart-shaped floating leaves and distinctive waxy yellow globular flowers on thick stalks that rise just above the water surface in summer; common on ponds, slow rivers, and lakes throughout MA.", photo:"Nuphar_variegata_1.jpg", emoji:"🌼" },
+
+  // ── NORTHEAST US (beyond MA) ───────────────────────────────────────────────
+  { region:"northeast", common_names:["Mountain Laurel","Calico Bush","Spoonwood"], scientific_name:"Kalmia latifolia", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Evergreen shrub with glossy leathery leaves and clusters of intricate pink-to-white flowers blooming in June, carpeting rocky Appalachian hillsides and forest understories from Pennsylvania through New England; the state flower of Pennsylvania and Connecticut.", photo:"Kalmia_latifolia_2.jpg", emoji:"🌸" },
+  { region:"northeast", common_names:["Great Laurel","Rosebay Rhododendron","Rhododendron"], scientific_name:"Rhododendron maximum", plant_type:"shrub", native_range:"Eastern North America", status_in_ma:"native", description:"Massive broadleaf evergreen shrub with large, dark green leathery leaves and showy pale pink flower clusters in July, forming cathedral-like thickets along Appalachian stream banks and shaded mountain slopes; far more dominant in Pennsylvania, Maryland, and New York than in Massachusetts.", photo:"Rhododendron_maximum_2.jpg", emoji:"🌺" },
+  { region:"northeast", common_names:["Pawpaw","Poor Man's Banana","Indiana Banana"], scientific_name:"Asimina triloba", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Tropical-looking understory tree with enormous drooping leaves and dark maroon flowers, producing the largest edible fruit native to North America — a custardy, banana-mango flavored pod; common in river bottom forests of Pennsylvania, Maryland, Delaware, and the Hudson Valley.", photo:"Asimina_triloba.jpg", emoji:"🍌" },
+  { region:"northeast", common_names:["Virginia Bluebells","Virginia Cowslip"], scientific_name:"Mertensia virginica", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Spectacular spring ephemeral with clusters of sky-blue trumpet-shaped flowers that form drifts of blue-purple along floodplain forests and river banks in April; abundant in Pennsylvania, Maryland, Delaware, and the Hudson Valley but largely absent from Massachusetts.", photo:"Mertensia_virginica_2.jpg", emoji:"💙" },
+  { region:"northeast", common_names:["Mayapple","American Mandrake","Umbrella Plant"], scientific_name:"Podophyllum peltatum", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Colonial groundcover of rich deciduous woodlands that carpets the forest floor with paired umbrella-like leaves, hiding a single waxy white flower beneath them in May; forms extensive colonies in mid-Atlantic forests from New Jersey through Pennsylvania and Maryland.", photo:"Podophyllum_peltatum_2.jpg", emoji:"☂️" },
+  { region:"northeast", common_names:["Bloodroot","Red Puccoon"], scientific_name:"Sanguinaria canadensis", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"One of the earliest spring wildflowers, sending up a single white poppy-like bloom wrapped in a lobed leaf in March and April across rich mesic forests and slopes; the rhizome bleeds bright orange-red sap when cut.", photo:"Sanguinaria_canadensis_2.jpg", emoji:"🌷" },
+  { region:"northeast", common_names:["Jack-in-the-Pulpit","Indian Turnip","Bog Onion"], scientific_name:"Arisaema triphyllum", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Distinctive spring wildflower with a striped green-and-purple spathe arching over a club-like spadix, found in moist shaded forests and floodplains across the Northeast; produces a striking cluster of bright red berries in late summer.", photo:"Arisaema_triphyllum_2.jpg", emoji:"🎪" },
+  { region:"northeast", common_names:["Trailing Arbutus","Mayflower","Ground Laurel"], scientific_name:"Epigaea repens", plant_type:"groundcover", native_range:"Eastern North America", status_in_ma:"native", description:"Low creeping evergreen groundcover with leathery oval leaves and intensely fragrant pink-white flowers that hug acidic, sandy or rocky forest floors in April; the state flower of both Massachusetts and Nova Scotia.", photo:"Epigaea_repens_2.jpg", emoji:"🌸" },
+  { region:"northeast", common_names:["Bunchberry","Dwarf Dogwood","Canadian Bunchberry"], scientific_name:"Cornus canadensis", plant_type:"groundcover", native_range:"Boreal North America and Asia", status_in_ma:"native", description:"Charming groundcover of cool boreal and subalpine forests with a whorl of leaves, a white four-petaled flower in June, and a cluster of bright red berries in late summer; characteristic of mossy conifer forests in Maine, northern New Hampshire, and Vermont.", photo:"Cornus_canadensis_2.jpg", emoji:"🔴" },
+  { region:"northeast", common_names:["Painted Trillium","Painted Lady"], scientific_name:"Trillium undulatum", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Most distinctive of the northeastern trilliums, with wavy-edged white petals marked at the base with a bold V-shaped magenta stripe, blooming in cool acidic woodlands in May; most characteristic of the boreal-influenced forests of Maine, Vermont, and the Adirondacks.", photo:"Trillium_undulatum_2.jpg", emoji:"🌺" },
+  { region:"northeast", common_names:["Turk's Cap Lily"], scientific_name:"Lilium superbum", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Towering native lily reaching 8 feet tall with whorled leaves and spectacular nodding orange flowers with swept-back spotted petals in July and August; found in moist meadows, stream banks, and forest edges, particularly showy in the mid-Atlantic states.", photo:"Lilium_superbum_2.jpg", emoji:"🧡" },
+  { region:"northeast", common_names:["Wild Columbine","Eastern Columbine","Rock Bells"], scientific_name:"Aquilegia canadensis", plant_type:"flowering", native_range:"Eastern North America", status_in_ma:"native", description:"Graceful wildflower with nodding red-and-yellow spurred flowers dangling from slender stems in April and May, growing from rocky ledges, cliff faces, and open woodlands throughout the Appalachian region; perfectly shaped for ruby-throated hummingbirds.", photo:"Aquilegia_canadensis_2.jpg", emoji:"🌹" },
+  { region:"northeast", common_names:["American Chestnut","Chestnut"], scientific_name:"Castanea dentata", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Once the dominant canopy tree of Appalachian forests from Maine to Georgia, now surviving only as stump sprouts due to the chestnut blight; long lance-shaped toothed leaves and showy white catkins in July, with young sprouts commonly encountered on Appalachian ridges in Pennsylvania and New York.", photo:"Castanea_dentata_2.jpg", emoji:"🌰" },
+  { region:"northeast", common_names:["Tulip Tree","Tulip Poplar","Yellow Poplar"], scientific_name:"Liriodendron tulipifera", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Tallest native eastern hardwood, with uniquely lobed tulip-shaped leaves that turn bright gold in fall and large greenish-yellow tulip-like flowers in May; abundant and dominant in Pennsylvania, New Jersey, Delaware, and Maryland forests but much less common in Massachusetts.", photo:"Liriodendron_tulipifera_2.jpg", emoji:"🌳" },
+  { region:"northeast", common_names:["Eastern Redbud","Redbud","Judas Tree"], scientific_name:"Cercis canadensis", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Small understory tree that erupts in magenta-pink flower clusters directly from its bare branches and trunk in April before any leaves appear; one of the most spectacular spring displays in mid-Atlantic forests and roadsides, native to Pennsylvania south but not reaching Massachusetts naturally.", photo:"Cercis_canadensis_2.jpg", emoji:"🌸" },
+  { region:"northeast", common_names:["Sweetgum","American Sweetgum","Star-leaved Gum"], scientific_name:"Liquidambar styraciflua", plant_type:"tree", native_range:"Eastern North America", status_in_ma:"native", description:"Tall tree with star-shaped five-pointed leaves and distinctive spiky gumball seed pods littering the ground, turning brilliant shades of red, purple, and gold in fall; common and abundant in New Jersey, Delaware, Maryland, and the Hudson Valley lowlands but largely absent from Massachusetts.", photo:"Liquidambar_styraciflua_2.jpg", emoji:"⭐" },
+  { region:"northeast", common_names:["Atlantic White Cedar","Southern White Cedar","Bog Cedar"], scientific_name:"Chamaecyparis thyoides", plant_type:"tree", native_range:"Atlantic Coastal Plain, Eastern North America", status_in_ma:"native", description:"Slender aromatic evergreen of coastal plain bogs and swamps, forming dense stands with reddish-brown fibrous bark and blue-green scale-like foliage; characteristic of the New Jersey Pine Barrens and mid-Atlantic coastal wetlands.", photo:"Chamaecyparis_thyoides_2.jpg", emoji:"🌲" },
+  { region:"northeast", common_names:["Yellow Birch","Golden Birch","Swamp Birch"], scientific_name:"Betula alleghaniensis", plant_type:"tree", native_range:"Northeastern North America", status_in_ma:"native", description:"Large birch of cool moist upland forests with distinctive shiny golden-bronze to silvery-yellow bark that peels in thin curls, and twigs with a strong wintergreen scent when scratched; most characteristic of the montane forests of Vermont, New Hampshire, Maine, and the Adirondacks.", photo:"Betula_alleghaniensis_2.jpg", emoji:"🌿" },
+  { region:"northeast", common_names:["Hobblebush","American Wayfaring Tree","Witch Hobble"], scientific_name:"Viburnum lantanoides", plant_type:"shrub", native_range:"Northeastern North America", status_in_ma:"native", description:"Sprawling native shrub of cool shaded montane forests with enormous heart-shaped leaves, flat-topped flower clusters with showy sterile outer flowers in May, and berries ripening from red to black in fall; its arching branches root where they touch the ground, tripping hikers.", photo:"Viburnum_lantanoides_2.jpg", emoji:"🌿" },
+  { region:"northeast", common_names:["Ostrich Fern","Fiddlehead Fern"], scientific_name:"Matteuccia struthiopteris", plant_type:"fern", native_range:"Northern North America, Europe, Asia", status_in_ma:"native", description:"Stately fern reaching 5 feet tall with vase-shaped fronds resembling ostrich plumes, forming large colonies along stream banks and floodplains throughout the Northeast; famous for its edible fiddleheads harvested in early spring.", photo:"Matteuccia_struthiopteris_2.jpg", emoji:"🌿" }
+];
+
+function imgUrl(photo) {
+  return `https://commons.wikimedia.org/wiki/Special:FilePath/${photo}?width=400`;
+}
+function badgeClass(s) { return s==="native"?"badge-native":s==="invasive"?"badge-invasive":"badge-cultivated"; }
+function badgeLabel(s) { return s==="native"?"Native":s==="invasive"?"Invasive":"Cultivated"; }
+function regionLabel(r) { return r==="southshore"?"02171 / South Shore":r==="massachusetts"?"Broader MA":"Northeast US"; }
+
+let activeRegion="all", activeType="all", activeStatus="all", searchQuery="";
+
+// Region filter is cumulative: "southshore" shows only southshore; "massachusetts" shows southshore+massachusetts; "northeast" shows all
+const REGION_INCLUDES = {
+  all: ["southshore","massachusetts","northeast"],
+  southshore: ["southshore"],
+  massachusetts: ["southshore","massachusetts"],
+  northeast: ["southshore","massachusetts","northeast"]
+};
+
+function matches(p) {
+  if (!REGION_INCLUDES[activeRegion].includes(p.region)) return false;
+  if (activeType !== "all" && p.plant_type !== activeType) return false;
+  if (activeStatus !== "all" && p.status_in_ma !== activeStatus) return false;
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    if (!p.common_names.some(n=>n.toLowerCase().includes(q)) && !p.scientific_name.toLowerCase().includes(q)) return false;
+  }
+  return true;
+}
+
+function render() {
+  const grid = document.getElementById("plantGrid");
+  const filtered = PLANTS.filter(matches);
+  document.getElementById("countBar").textContent = `${filtered.length} plant${filtered.length!==1?"s":""}`;
+  if (!filtered.length) { grid.innerHTML=`<div class="no-results"><div style="font-size:2.5rem">🔍</div><p>No plants match your filters.</p></div>`; return; }
+  grid.innerHTML = filtered.map(p => {
+    const idx = PLANTS.indexOf(p);
+    return `<div class="card" onclick="openModal(${idx})">
+      <img class="card-img" src="${imgUrl(p.photo)}" alt="${p.common_names[0]}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="card-img-placeholder">${p.emoji}</div>
+      <div class="card-body">
+        <div class="card-common">${p.common_names[0]}</div>
+        <div class="card-scientific">${p.scientific_name}</div>
+        <div class="card-footer">
+          <span class="status-badge ${badgeClass(p.status_in_ma)}">${badgeLabel(p.status_in_ma)}</span>
+          <span class="region-dot dot-${p.region}" title="${regionLabel(p.region)}"></span>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function openModal(idx) {
+  const p = PLANTS[idx];
+  const modal = document.getElementById("modal");
+  const altNames = p.common_names.slice(1);
+  modal.innerHTML = `
+    <img class="modal-img" src="${imgUrl(p.photo)}" alt="${p.common_names[0]}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <div class="modal-img-placeholder">${p.emoji}</div>
+    <div class="modal-body">
+      <div class="modal-common">${p.common_names[0]}</div>
+      ${altNames.length?`<div class="modal-also">Also: ${altNames.join(", ")}</div>`:""}
+      <div class="modal-scientific">${p.scientific_name}</div>
+      <div class="modal-divider"></div>
+      <div class="modal-row"><div class="modal-label">Type</div><div class="modal-value" style="text-transform:capitalize">${p.plant_type==="flowering"?"Flowering Plant":p.plant_type}</div></div>
+      <div class="modal-row"><div class="modal-label">Origin</div><div class="modal-value"><span class="status-badge ${badgeClass(p.status_in_ma)}">${badgeLabel(p.status_in_ma)}</span></div></div>
+      <div class="modal-row"><div class="modal-label">Native to</div><div class="modal-value">${p.native_range}</div></div>
+      <div class="modal-row"><div class="modal-label">Found in</div><div class="modal-value"><span class="region-tag ${p.region}">${regionLabel(p.region)}</span></div></div>
+      <div class="modal-description">${p.description}</div>
+    </div>`;
+  document.getElementById("modalOverlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+document.getElementById("modalClose").onclick = closeModal;
+document.getElementById("modalOverlay").onclick = e => { if(e.target===document.getElementById("modalOverlay")) closeModal(); };
+function closeModal() { document.getElementById("modalOverlay").classList.remove("open"); document.body.style.overflow=""; }
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeModal(); });
+
+document.querySelectorAll("[data-region]").forEach(btn => {
+  btn.onclick = function() {
+    document.querySelectorAll("[data-region]").forEach(b=>b.classList.remove("active"));
+    this.classList.add("active"); activeRegion=this.dataset.region; render();
+  };
+});
+document.querySelectorAll("[data-type]").forEach(btn => {
+  btn.onclick = function() {
+    document.querySelectorAll("[data-type]").forEach(b=>b.classList.remove("active"));
+    this.classList.add("active"); activeType=this.dataset.type; render();
+  };
+});
+document.querySelectorAll("[data-status]").forEach(btn => {
+  btn.onclick = function() {
+    document.querySelectorAll("[data-status]").forEach(b=>b.classList.remove("active"));
+    this.classList.add("active"); activeStatus=this.dataset.status; render();
+  };
+});
+document.getElementById("searchInput").oninput = function() { searchQuery=this.value.trim(); render(); };
+
+render();
+</script>
+</body>
+</html>
